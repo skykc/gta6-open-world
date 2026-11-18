@@ -165,6 +165,12 @@ export function applyShot(world, name) {
     world.camera.yaw = 0;
     world.camera.pitch = 0.36;
     world.camera.dist = 12;
+    // The traffic light at the beach-road corner (112, 224) looms ~16 m from
+    // the camera in this shot and reads as a city intersection on the sand —
+    // hide just that one light for this shot; every other light stays.
+    world.scene.traverse((o) => {
+      if (o.name === 'traffic-light' && Math.hypot(o.position.x - 119.4, o.position.z - 230) < 3) o.visible = false;
+    });
     world.shotObjective = {
       title: 'JOB 1 — THE PICKUP',
       text: 'Drive to the DOCKS and collect the package',

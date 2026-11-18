@@ -186,7 +186,7 @@ export class HUD {
       const rows = (s.police || []).map((c) => {
         const d = Math.round(Math.hypot(c.x - s.playerX, c.z - s.playerZ));
         const mode = c.mode || 'pursuit';
-        return { name: c.callsign || 'UNIT', dist: `${d} m`, mode, key: `${c.callsign}|${mode}|${Math.round(d / 5)}` };
+        return { name: c.callsign || 'UNIT', dist: `${d}m`, mode, key: `${c.callsign}|${mode}|${Math.round(d / 5)}` };
       });
       const unitsKey = `${s.wanted}|${rows.map((r) => r.key).join(',')}|${s.policeCops}|${s.heliActive}`;
       if (unitsKey !== this.lastUnitsKey) {

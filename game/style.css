@@ -51,7 +51,7 @@ body { font-family: "Arial Black", Arial, Helvetica, sans-serif; color: #fff; }
   text-shadow: 0 2px 0 #000, 0 0 14px rgba(0,0,0,.9);
 }
 #units-panel {
-  margin-top: 10px; width: 240px; background: rgba(8,12,24,.78);
+  margin-top: 10px; width: 272px; background: rgba(8,12,24,.78);
   border: 2px solid rgba(255,255,255,.35); border-radius: 6px; padding: 8px 10px;
 }
 #units-title { font-size: 17px; letter-spacing: 2px; color: #ffb3ab; text-shadow: 0 2px 0 #000; }
@@ -60,8 +60,8 @@ body { font-family: "Arial Black", Arial, Helvetica, sans-serif; color: #fff; }
   display: flex; align-items: center; gap: 8px;
   font-size: 14px; letter-spacing: 1px; text-shadow: 0 1px 0 #000;
 }
-#units-list .unit-name { color: #fff; flex: none; min-width: 118px; }
-#units-list .unit-dist { color: #cfe3ff; margin-left: auto; font-size: 13px; }
+#units-list .unit-name { color: #fff; flex: none; min-width: 100px; }
+#units-list .unit-dist { color: #cfe3ff; margin-left: auto; font-size: 13px; white-space: nowrap; }
 #units-list .pill { flex: none; }
 #units-list .pill {
   font-size: 13px; letter-spacing: 1px; padding: 4px 8px; border-radius: 12px;

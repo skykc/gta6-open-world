@@ -501,12 +501,15 @@ export function buildCity(scene, seed) {
       if ((ix + iz) % 2 !== 0) continue;
       const sx = STREETS[ix], sz = STREETS[iz];
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 5.6, 6), lampMat);
+      pole.name = 'traffic-light';
       pole.position.set(sx + 7.4, 2.8, sz + 7.4);
       scene.add(pole);
       const arm = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 2.6), lampMat);
+      arm.name = 'traffic-light';
       arm.position.set(sx + 7.4, 5.4, sz + 6.2);
       scene.add(arm);
       const head = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.6, 0.4), lightHeadMat);
+      head.name = 'traffic-light';
       head.position.set(sx + 7.4, 4.6, sz + 5.2);
       scene.add(head);
     }
