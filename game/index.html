@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOLMAR HEAT — Open City Crime</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+</head>
+<body>
+<div id="game-root"></div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="hud-top-left">
+    <div id="money">$0</div>
+    <div id="health-bar"><div id="health-fill"></div><span id="health-text">100</span></div>
+    <div id="ammo">PISTOL — 12 / ∞</div>
+  </div>
+  <div id="hud-top-right">
+    <div id="wanted"></div>
+    <div id="heat-label">HEAT</div>
+  </div>
+  <div id="objective"><div id="objective-title">SOLMAR HEAT</div><div id="objective-text">Welcome to Solmar.</div></div>
+  <div id="speedo" class="hidden"><span id="speed">0</span><span id="speed-unit">MPH</span></div>
+  <canvas id="minimap" width="220" height="220"></canvas>
+  <div id="toast"></div>
+  <div id="hint">WASD move &nbsp;·&nbsp; SHIFT run &nbsp;·&nbsp; E enter / exit car &nbsp;·&nbsp; F punch &nbsp;·&nbsp; CLICK shoot &nbsp;·&nbsp; R reload &nbsp;·&nbsp; M mute &nbsp;·&nbsp; P pause</div>
+  <div id="crosshair" class="hidden">+</div>
+  <div id="vignette"></div>
+  <div id="center-banner" class="hidden"></div>
+</div>
+
+<!-- Start screen -->
+<div id="menu" class="overlay">
+  <div class="menu-inner">
+    <div class="menu-kicker">MAKE.FUN &nbsp;·&nbsp; AN ORIGINAL OPEN-WORLD CRIME GAME</div>
+    <h1>SOLMAR<br><span>HEAT</span></h1>
+    <p class="menu-story">Sun-soaked Solmar Bay. Mara Voss, getaway driver, owes the wrong people
+    one last job. Steal cars, outrun the heat, and finish the three jobs that buy her freedom —
+    or end up caught in the back of a Solmar PD cruiser.</p>
+    <div class="menu-buttons">
+      <button id="btn-play" class="btn-primary">▶ &nbsp;PLAY</button>
+      <button id="btn-continue" class="btn-secondary hidden">CONTINUE — <span id="continue-label"></span></button>
+    </div>
+    <div class="menu-missions" id="menu-missions"></div>
+    <div class="menu-controls">
+      <div><b>W A S D</b> move / drive</div>
+      <div><b>MOUSE</b> drag to look · click to shoot</div>
+      <div><b>E</b> steal / enter car</div>
+      <div><b>SHIFT</b> run · <b>SPACE</b> handbrake</div>
+      <div><b>F</b> punch · <b>R</b> reload · <b>P</b> pause · <b>M</b> mute</div>
+    </div>
+    <div class="menu-foot">A 100% original game. No Rockstar content. Best played in desktop Chrome.</div>
+  </div>
+</div>
+
+<!-- Pause / end screens -->
+<div id="pause-menu" class="overlay hidden">
+  <div class="menu-inner">
+    <h2>PAUSED</h2>
+    <div class="menu-buttons">
+      <button id="btn-resume" class="btn-primary">RESUME</button>
+      <button id="btn-restart-mission" class="btn-secondary">RESTART MISSION</button>
+      <button id="btn-quit-menu" class="btn-secondary">QUIT TO MENU</button>
+    </div>
+  </div>
+</div>
+<div id="end-screen" class="overlay hidden">
+  <div class="menu-inner">
+    <h2 id="end-title">CAUGHT</h2>
+    <p class="menu-story" id="end-text"></p>
+    <div class="menu-buttons">
+      <button id="btn-respawn" class="btn-primary">BACK ON THE STREETS</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
