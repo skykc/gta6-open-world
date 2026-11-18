@@ -41,6 +41,9 @@ const SEED = params.seed || 20261118;
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// Filmic sunset grade: warm highlights, deeper shadows, punchier colour.
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
 document.getElementById('game-root').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -66,6 +69,7 @@ const missions = new MissionSystem(scene, city, mulberry32(SEED + 55), {
   },
   onComplete: () => { refreshMenuMissions(); },
   onFail: (msg) => { hud.toast(msg, 5000); audio.siren(false); },
+  onDialogue: (name, text) => hud.dialogue(name, text),
   onHeat: (n) => { police.addHeat(n, 'mission'); },
   onClearHeat: () => { police.clearHeat(); },
   onSpecialCar: (car) => { world.cars.push(car); },
@@ -410,7 +414,11 @@ function frame(now) {
     speed: player.isDriving ? player.car.speed : 0,
     driving: player.isDriving,
     objectiveTitle: obj.title,
-    objectiveText: obj.text + (missions.current && missions.current.timer > 0 ? `  ·  ${Math.ceil(missions.current.timer)}s` : ''),
+    objectiveText: obj.text,
+    missionTimer: (missions.current && missions.current.timer > 0)
+      ? missions.current.timer : (world.shotTimer || 0),
+    policeCops: police.cops.filter((c) => !c.down).length,
+    heliActive: !!police.heli,
     playerX: player.pos.x,
     playerZ: player.pos.z,
     heading: player.isDriving ? player.car.heading : player.heading,

@@ -9,8 +9,8 @@ export const CAR_COLORS = [0xc23b2e, 0x2e6fc2, 0xe8b93b, 0x3aa655, 0x8a5fc2, 0xd
 const WHEEL_GEO = new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10);
 const WHEEL_MAT = new THREE.MeshLambertMaterial({ color: 0x141414 });
 
-/** Build a car mesh. `police` adds a red/blue light bar. Returns { group, wheels, lightBar }. */
-export function makeCarMesh(color, police = false) {
+/** Build a car mesh. `police` adds a red/blue light bar; `sport` adds a rear wing. Returns { group, wheels, lightBar }. */
+export function makeCarMesh(color, police = false, sport = false) {
   const group = new THREE.Group();
   const bodyMat = new THREE.MeshLambertMaterial({ color });
   const glassMat = new THREE.MeshLambertMaterial({ color: 0x1a2733 });
@@ -20,6 +20,18 @@ export function makeCarMesh(color, police = false) {
   const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.55, 2.2), glassMat);
   cabin.position.set(0, 1.1, -0.2);
   group.add(cabin);
+  if (sport) {
+    // Rear wing on two struts, like the Aurora GT in the reference chase.
+    const wingMat = new THREE.MeshLambertMaterial({ color: 0x14141c });
+    for (const s of [-0.7, 0.7]) {
+      const strut = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.4, 0.12), wingMat);
+      strut.position.set(s, 1.05, -2.0);
+      group.add(strut);
+    }
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.09, 0.55), wingMat);
+    wing.position.set(0, 1.28, -2.0);
+    group.add(wing);
+  }
   const headMat = new THREE.MeshBasicMaterial({ color: 0xfff2b0 });
   for (const s of [-0.65, 0.65]) {
     const h = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.16, 0.1), headMat);

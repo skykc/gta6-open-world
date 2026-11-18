@@ -59,7 +59,7 @@ function facadeTexture(THREE, rng, base, litRatio) {
 function roadTexture(THREE) {
   // Asphalt with a dashed centre line, repeated along the strip.
   return canvasTexture(THREE, 64, 256, (g, w, h) => {
-    g.fillStyle = '#2b2f36';
+    g.fillStyle = '#3a3f47';
     g.fillRect(0, 0, w, h);
     g.fillStyle = '#f5c542';
     g.fillRect(w / 2 - 2, 20, 4, 60);
@@ -70,30 +70,81 @@ function roadTexture(THREE) {
   }, 1, 8);
 }
 
+function skyTexture(THREE) {
+  // Vertical sunset gradient: magenta dusk up top, hot orange, gold at the horizon.
+  return canvasTexture(THREE, 16, 512, (g, w, h) => {
+    const grad = g.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#7a2d5e');
+    grad.addColorStop(0.35, '#c65a7d');
+    grad.addColorStop(0.62, '#ff8a5c');
+    grad.addColorStop(0.82, '#ffb36b');
+    grad.addColorStop(1, '#ffd27a');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, w, h);
+  });
+}
+
+function billboardTexture(THREE, title, sub, color) {
+  // Neon sign face: dark navy, glowing border + big bold letters.
+  return canvasTexture(THREE, 512, 224, (g, w, h) => {
+    g.fillStyle = '#14092b';
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = color;
+    g.lineWidth = 8;
+    g.shadowColor = color;
+    g.shadowBlur = 22;
+    g.strokeRect(10, 10, w - 20, h - 20);
+    g.shadowBlur = 26;
+    g.fillStyle = color;
+    g.font = '900 84px Arial, sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(title, w / 2, h / 2 - 22);
+    g.shadowBlur = 12;
+    g.fillStyle = '#ffffff';
+    g.font = 'bold 34px Arial, sans-serif';
+    g.fillText(sub, w / 2, h / 2 + 62);
+  });
+}
+
 export function buildCity(scene, seed) {
   const rng = mulberry32(seed);
   const colliders = [];
   const boxGeo = new THREE.BoxGeometry(1, 1, 1);
   const roofGeo = new THREE.BoxGeometry(1, 1, 1);
 
-  // ---- sky, light, fog: a bright late-afternoon over the bay.
-  scene.background = new THREE.Color(0x8ec3e8);
-  scene.fog = new THREE.Fog(0x9cc3e2, 180, 620);
-  const sun = new THREE.DirectionalLight(0xfff1cf, 2.4);
-  sun.position.set(120, 190, 60);
+  // ---- sky, light, fog: a hot Solmar sunset — pink sky, low gold sun.
+  scene.background = skyTexture(THREE);
+  scene.fog = new THREE.Fog(0xf2a35e, 150, 560);
+  const sun = new THREE.DirectionalLight(0xffb36b, 2.6);
+  sun.position.set(140, 70, -260);
   scene.add(sun);
-  scene.add(new THREE.AmbientLight(0xbfd8ee, 0.85));
-  const hemi = new THREE.HemisphereLight(0xcfe6ff, 0x8a7a5a, 0.55);
+  scene.add(new THREE.AmbientLight(0xffd9b0, 0.7));
+  const hemi = new THREE.HemisphereLight(0xff9e7d, 0x5a4a3a, 0.6);
   scene.add(hemi);
-  // Sun disc + a few drifting clouds (flat white blobs, cheap and cheerful).
+  // Low sun disc dead ahead of the main avenue (north), so the chase shot
+  // drives straight into the sunset.
   const sunDisc = new THREE.Mesh(
-    new THREE.CircleGeometry(22, 24),
-    new THREE.MeshBasicMaterial({ color: 0xfff6c9, fog: false })
+    new THREE.CircleGeometry(36, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffd27a, fog: false })
   );
-  sunDisc.position.set(300, 210, -260);
-  sunDisc.lookAt(0, 40, 0);
+  sunDisc.position.set(0, 48, -330);
+  sunDisc.lookAt(0, 30, 0);
   scene.add(sunDisc);
-  const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, fog: false });
+  // A warm halo around the sun.
+  const halo = new THREE.Mesh(
+    new THREE.CircleGeometry(70, 24),
+    new THREE.MeshBasicMaterial({ color: 0xff9e5e, transparent: true, opacity: 0.35, fog: false })
+  );
+  halo.position.set(0, 48, -332);
+  halo.lookAt(0, 30, 0);
+  scene.add(halo);
+  // Warm fill from the south so the shadow side of cars (facing the chase
+  // camera) is never black.
+  const fill = new THREE.DirectionalLight(0xff9e7d, 0.9);
+  fill.position.set(0, 100, 300);
+  scene.add(fill);
+  const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffc9b8, transparent: true, opacity: 0.8, fog: false });
   for (let i = 0; i < 9; i++) {
     const cloud = new THREE.Mesh(new THREE.PlaneGeometry(randRange(rng, 60, 130), randRange(rng, 14, 26)), cloudMat);
     cloud.position.set(randRange(rng, -320, 320), randRange(rng, 120, 190), randRange(rng, -320, 120));
@@ -104,7 +155,7 @@ export function buildCity(scene, seed) {
   // ---- ground: concrete base, roads, sidewalks, beach + sea.
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(900, 900),
-    new THREE.MeshLambertMaterial({ color: 0x9aa08e })
+    new THREE.MeshLambertMaterial({ color: 0xa89a80 })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.05;
@@ -139,14 +190,14 @@ export function buildCity(scene, seed) {
   // Beach sand + sea on the south edge (z beyond the last street).
   const sand = new THREE.Mesh(
     new THREE.PlaneGeometry(560, 60),
-    new THREE.MeshLambertMaterial({ color: 0xe8d5a3 })
+    new THREE.MeshLambertMaterial({ color: 0xe8c98a })
   );
   sand.rotation.x = -Math.PI / 2;
   sand.position.set(0, 0.04, 282);
   scene.add(sand);
   const sea = new THREE.Mesh(
     new THREE.PlaneGeometry(900, 260),
-    new THREE.MeshLambertMaterial({ color: 0x2e7fb8 })
+    new THREE.MeshLambertMaterial({ color: 0x2a6f9e })
   );
   sea.rotation.x = -Math.PI / 2;
   sea.position.set(0, 0.02, 440);
@@ -206,9 +257,10 @@ export function buildCity(scene, seed) {
     }
   }
 
-  // ---- street props: palms along the beach road + main avenue, lamps at corners.
+  // ---- street props: palms along every avenue, a lush row on the sand,
+  // lamps at corners, and neon billboards over the main roads.
   const trunkMat = new THREE.MeshLambertMaterial({ color: 0x7a5230 });
-  const palmMat = new THREE.MeshLambertMaterial({ color: 0x3f9e4d });
+  const palmMat = new THREE.MeshLambertMaterial({ color: 0x2f8f3e });
   const lampMat = new THREE.MeshLambertMaterial({ color: 0x3a3f45 });
   const lampGlowMat = new THREE.MeshBasicMaterial({ color: 0xffe9a8 });
   for (const s of STREETS) {
@@ -218,6 +270,33 @@ export function buildCity(scene, seed) {
       plantPalm(scene, s - 10.5, k * 56, trunkMat, palmMat);
     }
   }
+  // Extra palm row on the sand, facing the beach road.
+  for (let x = -240; x <= 240; x += 24) plantPalm(scene, x, 258, trunkMat, palmMat);
+  // Neon billboards: SOLMAR over the main avenue (seen driving north),
+  // AURORA GT over the cross avenue, SOLMAR BAY along the beach road.
+  const postMat = new THREE.MeshLambertMaterial({ color: 0x2a2f36 });
+  const addBillboard = (x, z, rotY, title, sub, color) => {
+    const tex = billboardTexture(THREE, title, sub, color);
+    const face = new THREE.Mesh(
+      new THREE.PlaneGeometry(26, 11.4),
+      new THREE.MeshBasicMaterial({ map: tex })
+    );
+    face.position.set(x, 11, z);
+    face.rotation.y = rotY;
+    scene.add(face);
+    // Two posts hold the sign up; cars pass underneath the face (bottom at ~6.8).
+    const off = { x: Math.cos(rotY) * 11, z: -Math.sin(rotY) * 11 };
+    for (const s of [-1, 1]) {
+      const px = x + off.x * s, pz = z + off.z * s;
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 7, 6), postMat);
+      post.position.set(px, 3.5, pz);
+      scene.add(post);
+      colliders.push({ minX: px - 0.5, maxX: px + 0.5, minZ: pz - 0.5, maxZ: pz + 0.5 });
+    }
+  };
+  addBillboard(12, -168, 0, 'SOLMAR', 'BAY CITY • EST. 1987', '#ff2e88');
+  addBillboard(-12, 112, Math.PI, 'AURORA GT', 'SOLMAR MOTORS', '#ffd60a');
+  addBillboard(90, 238, -Math.PI / 2, 'SOLMAR BAY', 'SUN • SAND • SPEED', '#4fc2c2');
   for (const sx of STREETS) {
     for (const sz of STREETS) {
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 6, 6), lampMat);
@@ -279,14 +358,14 @@ function plantTree(scene, x, z) {
 }
 
 function plantPalm(scene, x, z, trunkMat, palmMat) {
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 5.5, 6), trunkMat);
-  trunk.position.set(x, 2.75, z);
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.38, 7, 6), trunkMat);
+  trunk.position.set(x, 3.5, z);
   trunk.rotation.z = 0.08;
   scene.add(trunk);
-  for (let i = 0; i < 5; i++) {
-    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.62, 2.4, 4), palmMat);
-    const a = (i / 5) * Math.PI * 2;
-    leaf.position.set(x + Math.cos(a) * 1.05, 5.6, z + Math.sin(a) * 1.05);
+  for (let i = 0; i < 6; i++) {
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.85, 3.4, 4), palmMat);
+    const a = (i / 6) * Math.PI * 2;
+    leaf.position.set(x + Math.cos(a) * 1.5, 7.2, z + Math.sin(a) * 1.5);
     leaf.rotation.z = Math.cos(a) * 1.1;
     leaf.rotation.x = -Math.sin(a) * 1.1;
     scene.add(leaf);

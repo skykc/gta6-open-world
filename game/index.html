@@ -19,14 +19,26 @@
     <div id="money">$0</div>
     <div id="health-bar"><div id="health-fill"></div><span id="health-text">100</span></div>
     <div id="ammo">PISTOL — 12 / ∞</div>
+    <div id="mission-timer" class="hidden">⏱ 0:00</div>
+    <div id="units-panel" class="hidden">
+      <div id="units-title">0 UNITS — CODE 0</div>
+      <div id="units-list"></div>
+    </div>
   </div>
   <div id="hud-top-right">
     <div id="wanted"></div>
     <div id="heat-label">HEAT</div>
   </div>
   <div id="objective"><div id="objective-title">SOLMAR HEAT</div><div id="objective-text">Welcome to Solmar.</div></div>
+  <div id="dialogue" class="hidden">
+    <canvas id="dialogue-portrait" width="96" height="96"></canvas>
+    <div class="dialogue-body">
+      <div id="dialogue-name">MARA VOSS — GETAWAY DRIVER</div>
+      <div id="dialogue-text"></div>
+    </div>
+  </div>
   <div id="speedo" class="hidden"><span id="speed">0</span><span id="speed-unit">MPH</span></div>
-  <canvas id="minimap" width="220" height="220"></canvas>
+  <canvas id="minimap" width="240" height="240"></canvas>
   <div id="toast"></div>
   <div id="hint">WASD move &nbsp;·&nbsp; SHIFT run &nbsp;·&nbsp; E enter / exit car &nbsp;·&nbsp; F punch &nbsp;·&nbsp; CLICK shoot &nbsp;·&nbsp; R reload &nbsp;·&nbsp; M mute &nbsp;·&nbsp; P pause</div>
   <div id="crosshair" class="hidden">+</div>

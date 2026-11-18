@@ -65,9 +65,9 @@ export class MissionSystem {
       },
       {
         id: 1, title: 'JOB 2 — HOT WHEELS', reward: 3000,
-        brief: 'A gold Aurora GT is parked uptown. Steal it and deliver it to the chop shop. The owner will call the cops — expect heat.',
+        brief: 'A pink Aurora GT is parked uptown. Steal it and deliver it to the chop shop. The owner will call the cops — expect heat.',
         stages: [
-          { text: 'Steal the GOLD AURORA GT parked uptown', target: this.spots.goldCar, radius: 5, needsCar: true },
+          { text: 'Steal the PINK AURORA GT parked uptown', target: this.spots.goldCar, radius: 5, needsCar: true },
           { text: 'Deliver the Aurora to the CHOP SHOP — lose the cops if you can', target: this.spots.chopShop, radius: 6 },
         ],
       },
@@ -99,12 +99,13 @@ export class MissionSystem {
     this.marker.visible = true;
     this.marker.position.set(this.current.stage.target.x, 0, this.current.stage.target.z);
     if (this.cb.onToast) this.cb.onToast(`${def.title} — ${def.brief}`);
+    if (this.cb.onDialogue) this.cb.onDialogue('MARA VOSS — GETAWAY DRIVER', def.brief);
     return true;
   }
 
   spawnGoldCar() {
     if (this.specialCar) return;
-    const mesh = makeCarMesh(0xffd700);
+    const mesh = makeCarMesh(0xff2e88, false, true);
     this.scene.add(mesh.group);
     const car = {
       kind: 'parked', ...mesh, x: this.spots.goldCar.x, z: this.spots.goldCar.z,
@@ -123,6 +124,7 @@ export class MissionSystem {
       cur.timer = cur.stage.timer || 0;
       this.marker.position.set(cur.stage.target.x, 0, cur.stage.target.z);
       if (this.cb.onToast) this.cb.onToast(cur.stage.text);
+      if (this.cb.onDialogue) this.cb.onDialogue('MARA VOSS — GETAWAY DRIVER', cur.stage.text);
       if (cur.def.id === 1 && cur.stageIndex === 1 && this.cb.onHeat) {
         this.cb.onHeat(2, 'the owner called the cops');
       }
