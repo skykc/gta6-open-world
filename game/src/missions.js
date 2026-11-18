@@ -53,6 +53,7 @@ export class MissionSystem {
       chopShop: { x: 224, z: -112 },
       hideout: { x: -224, z: 168 },
       goldCar: { x: -56, z: 56 },
+      marina: { x: -56, z: 112 },
     };
     this.defs = [
       {
@@ -78,13 +79,21 @@ export class MissionSystem {
           { text: '3 STARS! Reach the HIDEOUT before the PD boxes you in', target: this.spots.hideout, radius: 7, timer: 150 },
         ],
       },
+      {
+        id: 3, title: 'JOB 4 — CLEAN GETAWAY', reward: 7500,
+        brief: 'One last run: grab the package at the marina, then thread the whole city to the docks — 2 stars from the start, 150 seconds on the clock.',
+        stages: [
+          { text: 'Grab the package at the MARINA — the PD is already on you', target: this.spots.marina, radius: 6 },
+          { text: 'Package in hand! Run it to the DOCKS before the clock dies', target: this.spots.docks, radius: 6, timer: 150 },
+        ],
+      },
     ];
   }
 
   get active() { return this.current !== null; }
   get objectiveText() {
     if (this.current) return this.current.stage.text;
-    if (this.completed.size >= 3) return 'All jobs done — Solmar is yours. Free roam, Mara.';
+    if (this.completed.size >= 4) return 'All jobs done — Solmar is yours. Free roam, Mara.';
     const next = this.defs.find((d) => !this.completed.has(d.id));
     return next ? `Next job available: ${next.title} — press PLAY from the menu, or keep cruising.` : 'Free roam.';
   }
@@ -95,6 +104,7 @@ export class MissionSystem {
     if (!def || this.completed.has(id) || this.current) return false;
     if (id === 1) this.spawnGoldCar();
     if (id === 2 && this.cb.onHeat) this.cb.onHeat(3, 'the whole PD is on you');
+    if (id === 3 && this.cb.onHeat) this.cb.onHeat(2, 'the PD is already on you');
     this.current = { def, stageIndex: 0, stage: def.stages[0], timer: def.stages[0].timer || 0 };
     this.marker.visible = true;
     this.marker.position.set(this.current.stage.target.x, 0, this.current.stage.target.z);

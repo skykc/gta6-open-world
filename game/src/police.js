@@ -8,6 +8,12 @@ import { makeCarMesh, syncCarMesh } from './vehicles.js';
 
 const MAX_WANTED = 5;
 const DECAY_QUIET_SECONDS = 18;
+// Solmar PD unit callsigns — coastal birds and rays, handed out in order
+// so the HUD's unit list can name every cruiser in the pursuit.
+const CALLSIGNS = [
+  'GULL-12', 'PELICAN-04', 'OSPREY-22', 'HERON-09', 'MANTA-31',
+  'EGRET-17', 'TERN-08', 'CORMORANT-25', 'ALBATROSS-03', 'KESTREL-19',
+];
 
 function makeCopMesh() {
   const g = new THREE.Group();
@@ -115,6 +121,13 @@ export class PoliceSystem {
     // Staged shot: when true, cruisers hold their staged pose (light bars
     // still flash) and the heli holds its angle — deterministic framing.
     this.frozen = false;
+    this.callsignIdx = 0;
+  }
+
+  nextCallsign() {
+    const name = CALLSIGNS[this.callsignIdx % CALLSIGNS.length];
+    this.callsignIdx++;
+    return name;
   }
 
   addHeat(n, reason) {
@@ -139,7 +152,7 @@ export class PoliceSystem {
     const mesh = makeHeliMesh();
     this.scene.add(mesh.group);
     this.heli = {
-      ...mesh,
+      ...mesh, callsign: 'AIR-1',
       angle: this.heliAngle0 !== undefined ? this.heliAngle0 : this.rng() * Math.PI * 2,
     };
     return this.heli;
@@ -159,6 +172,7 @@ export class PoliceSystem {
     const car = {
       kind: 'police', ...mesh, x: p.x, z: p.z, heading: this.rng() * Math.PI * 2,
       speed: 0, gone: false, steerVis: 0, stuckT: 0, hitRadius: 2.6,
+      callsign: this.nextCallsign(), mode: 'pursuit',
     };
     syncCarMesh(car);
     this.cars.push(car);

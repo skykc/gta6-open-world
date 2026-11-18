@@ -18,7 +18,9 @@
   <div id="hud-top-left">
     <div id="money">$0</div>
     <div id="health-bar"><div id="health-fill"></div><span id="health-text">100</span></div>
-    <div id="ammo">PISTOL — 12 / ∞</div>
+    <div id="weapons"></div>
+    <div id="respect-bar"><div id="respect-fill"></div><span id="respect-text">RESPECT 1 — 0 / 100</span></div>
+    <div id="radio">♪ SOLMAR FM 88.1 · Sunset Drive — The Palms</div>
     <div id="mission-timer" class="hidden">⏱ 0:00</div>
     <div id="units-panel" class="hidden">
       <div id="units-title">0 UNITS — CODE 0</div>
@@ -26,6 +28,7 @@
     </div>
   </div>
   <div id="hud-top-right">
+    <div id="game-clock">DAY 1 · 18:52</div>
     <div id="wanted"></div>
     <div id="heat-label">HEAT</div>
   </div>
@@ -38,12 +41,34 @@
     </div>
   </div>
   <div id="speedo" class="hidden"><span id="speed">0</span><span id="speed-unit">MPH</span></div>
-  <canvas id="minimap" width="240" height="240"></canvas>
+  <div id="minimap-wrap"><canvas id="minimap" width="240" height="240"></canvas><div id="district-label">DOWNTOWN</div></div>
   <div id="toast"></div>
-  <div id="hint">WASD move &nbsp;·&nbsp; SHIFT run &nbsp;·&nbsp; E enter / exit car &nbsp;·&nbsp; F punch &nbsp;·&nbsp; CLICK shoot &nbsp;·&nbsp; R reload &nbsp;·&nbsp; M mute &nbsp;·&nbsp; P pause</div>
+  <div id="hint">WASD move &nbsp;·&nbsp; E car &nbsp;·&nbsp; F punch &nbsp;·&nbsp; CLICK shoot &nbsp;·&nbsp; 1/2/3 weapons &nbsp;·&nbsp; R reload &nbsp;·&nbsp; TAB map &nbsp;·&nbsp; P pause</div>
   <div id="crosshair" class="hidden">+</div>
   <div id="vignette"></div>
   <div id="center-banner" class="hidden"></div>
+</div>
+
+<!-- Full city map (TAB) -->
+<div id="map-overlay" class="overlay hidden">
+  <div class="map-inner">
+    <div class="map-head"><h2>SOLMAR BAY — CITY MAP</h2><div class="map-close-hint">TAB / ESC to close</div></div>
+    <div class="map-body">
+      <canvas id="bigmap" width="560" height="560"></canvas>
+      <div class="map-side">
+        <div class="map-section"><h3>STATS</h3><div id="map-stats"></div></div>
+        <div class="map-section"><h3>JOBS</h3><div id="map-missions"></div></div>
+        <div class="map-section"><h3>LEGEND</h3>
+          <div>◆ <span class="legend-gold">Mission target</span></div>
+          <div>● <span class="legend-gold">Stash — $250</span></div>
+          <div>● <span class="legend-red">SMG crate (downtown)</span></div>
+          <div>● <span class="legend-pink">Pink Aurora GT</span></div>
+          <div>● <span class="legend-red2">Police</span></div>
+          <div>▲ You</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Start screen -->
@@ -52,8 +77,9 @@
     <div class="menu-kicker">MAKE.FUN &nbsp;·&nbsp; AN ORIGINAL OPEN-WORLD CRIME GAME</div>
     <h1>SOLMAR<br><span>HEAT</span></h1>
     <p class="menu-story">Sun-soaked Solmar Bay. Mara Voss, getaway driver, owes the wrong people
-    one last job. Steal cars, outrun the heat, and finish the three jobs that buy her freedom —
-    or end up caught in the back of a Solmar PD cruiser.</p>
+    one last job. Steal cars, outrun the heat, and finish the four jobs that buy her freedom —
+    or end up caught in the back of a Solmar PD cruiser. Eight hidden stashes wait around the
+    city, and a SMG crate sits downtown for drivers who want more firepower.</p>
     <div class="menu-buttons">
       <button id="btn-play" class="btn-primary">▶ &nbsp;PLAY</button>
       <button id="btn-continue" class="btn-secondary hidden">CONTINUE — <span id="continue-label"></span></button>
@@ -65,6 +91,8 @@
       <div><b>E</b> steal / enter car</div>
       <div><b>SHIFT</b> run · <b>SPACE</b> handbrake</div>
       <div><b>F</b> punch · <b>R</b> reload · <b>P</b> pause · <b>M</b> mute</div>
+      <div><b>1 / 2 / 3</b> fists · pistol · SMG</div>
+      <div><b>TAB</b> city map · <b>ESC</b> close map</div>
     </div>
     <div class="menu-foot">A 100% original game. No Rockstar content. Best played in desktop Chrome.</div>
   </div>

@@ -9,17 +9,32 @@ export const CAR_COLORS = [0xc23b2e, 0x2e6fc2, 0xe8b93b, 0x3aa655, 0x8a5fc2, 0xd
 const WHEEL_GEO = new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10);
 const WHEEL_MAT = new THREE.MeshLambertMaterial({ color: 0x141414 });
 
-/** Build a car mesh. `police` adds a red/blue light bar; `sport` adds a rear wing. Returns { group, wheels, lightBar }. */
-export function makeCarMesh(color, police = false, sport = false) {
+/** Build a car mesh. `police` adds a red/blue light bar; `sport` adds a rear wing.
+ *  `variant` is 'taxi' (yellow + roof sign) or 'van' (taller, longer body).
+ *  Returns { group, wheels, lightBar }. */
+export function makeCarMesh(color, police = false, sport = false, variant = null) {
   const group = new THREE.Group();
   const bodyMat = new THREE.MeshLambertMaterial({ color });
   const glassMat = new THREE.MeshLambertMaterial({ color: 0x1a2733 });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.62, 4.4), bodyMat);
+  const bodyLen = variant === 'van' ? 5.0 : 4.4;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.62, bodyLen), bodyMat);
   body.position.y = 0.55;
   group.add(body);
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.55, 2.2), glassMat);
-  cabin.position.set(0, 1.1, -0.2);
+  const cabin = new THREE.Mesh(
+    new THREE.BoxGeometry(1.8, variant === 'van' ? 0.95 : 0.55, variant === 'van' ? 3.0 : 2.2),
+    glassMat
+  );
+  cabin.position.set(0, variant === 'van' ? 1.3 : 1.1, variant === 'van' ? -0.3 : -0.2);
   group.add(cabin);
+  if (variant === 'taxi') {
+    // Roof sign: a small lit box, like the cabs lining the avenues.
+    const sign = new THREE.Mesh(
+      new THREE.BoxGeometry(0.9, 0.28, 0.4),
+      new THREE.MeshBasicMaterial({ color: 0xffe9a8 })
+    );
+    sign.position.set(0, 1.5, -0.2);
+    group.add(sign);
+  }
   if (sport) {
     // Rear wing on two struts, like the Aurora GT in the reference chase.
     const wingMat = new THREE.MeshLambertMaterial({ color: 0x14141c });
@@ -33,15 +48,16 @@ export function makeCarMesh(color, police = false, sport = false) {
     group.add(wing);
   }
   const headMat = new THREE.MeshBasicMaterial({ color: 0xfff2b0 });
+  const noseZ = bodyLen / 2 + 0.01;
   for (const s of [-0.65, 0.65]) {
     const h = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.16, 0.1), headMat);
-    h.position.set(s, 0.6, 2.21);
+    h.position.set(s, 0.6, noseZ);
     group.add(h);
     const tail = new THREE.Mesh(
       new THREE.BoxGeometry(0.4, 0.16, 0.1),
       new THREE.MeshBasicMaterial({ color: 0xff2a22 })
     );
-    tail.position.set(s, 0.6, -2.21);
+    tail.position.set(s, 0.6, -noseZ);
     group.add(tail);
   }
   const wheels = {};
@@ -150,23 +166,37 @@ export class TrafficSystem {
     this.city = city;
     this.rng = rng;
     this.cars = [];
-    this.maxCars = 14;
+    this.maxCars = 24;
+  }
+
+  /** Pick a traffic car look: mostly sedans, some yellow cabs, some vans. */
+  pickLook() {
+    const r = this.rng();
+    if (r < 0.15) return { color: 0xf5c542, variant: 'taxi' };
+    if (r < 0.27) return { color: pick(this.rng, CAR_COLORS), variant: 'van' };
+    return { color: pick(this.rng, CAR_COLORS), variant: null };
   }
 
   spawnOne(near) {
-    const p = this.city.randomRoadPoint(this.rng);
-    if (near && dist2d(p.x, p.z, near.x, near.z) > 170) return;
-    const from = this.nearestNode(p.x, p.z);
-    const to = pick(this.rng, this.city.edges.get(from));
-    const mesh = makeCarMesh(pick(this.rng, CAR_COLORS));
-    this.scene.add(mesh.group);
-    const cruiseSpeed = randRange(this.rng, 8, 12);
-    const car = {
-      kind: 'traffic', ...mesh, x: p.x, z: p.z, heading: 0, speed: cruiseSpeed,
-      cruiseSpeed, from, to, t: 0, gone: false, steerVis: 0,
-    };
-    this.cars.push(car);
-    return car;
+    // Retry a few random points: a single far roll must not leave the
+    // streets empty for a whole frame.
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const p = this.city.randomRoadPoint(this.rng);
+      if (near && dist2d(p.x, p.z, near.x, near.z) > 170) continue;
+      const from = this.nearestNode(p.x, p.z);
+      const to = pick(this.rng, this.city.edges.get(from));
+      const look = this.pickLook();
+      const mesh = makeCarMesh(look.color, false, false, look.variant);
+      this.scene.add(mesh.group);
+      const cruiseSpeed = randRange(this.rng, 8, 12);
+      const car = {
+        kind: 'traffic', ...mesh, x: p.x, z: p.z, heading: 0, speed: cruiseSpeed,
+        cruiseSpeed, from, to, t: 0, gone: false, steerVis: 0,
+      };
+      this.cars.push(car);
+      return car;
+    }
+    return undefined;
   }
 
   nearestNode(x, z) {
@@ -192,9 +222,6 @@ export class TrafficSystem {
   }
 
   update(dt, playerPos) {
-    while (this.cars.length < this.maxCars) {
-      if (!this.spawnOne(playerPos)) break;
-    }
     for (const car of this.cars) {
       if (car.gone) continue;
       // Slow down for a car ahead on the same stretch.
@@ -229,11 +256,15 @@ export class TrafficSystem {
       }
     }
     this.cars = this.cars.filter((c) => !c.gone);
+    // Refill AFTER recycling, so the streets stay at full density.
+    while (this.cars.length < this.maxCars) {
+      if (!this.spawnOne(playerPos)) break;
+    }
   }
 }
 
 /** Parked cars on a few blocks: free to steal, no traffic AI attached. */
-export function spawnParkedCars(scene, city, rng, count = 10) {
+export function spawnParkedCars(scene, city, rng, count = 22) {
   const cars = [];
   for (let i = 0; i < count; i++) {
     const street = pick(rng, [-224, -168, -112, -56, 0, 56, 112, 168, 224]);
@@ -242,7 +273,12 @@ export function spawnParkedCars(scene, city, rng, count = 10) {
     const x = vertical ? street + 4.4 : along;
     const z = vertical ? along : street + 4.4;
     const heading = vertical ? 0 : Math.PI / 2;
-    const mesh = makeCarMesh(pick(rng, CAR_COLORS));
+    const r = rng();
+    const look = r < 0.15
+      ? { color: 0xf5c542, variant: 'taxi' }
+      : r < 0.25 ? { color: pick(rng, CAR_COLORS), variant: 'van' }
+        : { color: pick(rng, CAR_COLORS), variant: null };
+    const mesh = makeCarMesh(look.color, false, false, look.variant);
     scene.add(mesh.group);
     const car = { kind: 'parked', ...mesh, x, z, heading, speed: 0, gone: false, steerVis: 0 };
     syncCarMesh(car);

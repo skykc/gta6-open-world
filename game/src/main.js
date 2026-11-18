@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { clamp, lerp, angleLerp, urlParams, mulberry32 } from './utils.js';
-import { buildCity } from './city.js';
+import { buildCity, districtAt } from './city.js';
 import { Input } from './input.js';
 import { AudioSys } from './audio.js';
 import { Player } from './player.js';
@@ -11,6 +11,7 @@ import { TrafficSystem, spawnParkedCars, updatePlayerCar } from './vehicles.js';
 import { PedSystem } from './pedestrians.js';
 import { PoliceSystem } from './police.js';
 import { MissionSystem } from './missions.js';
+import { StashSystem } from './collectibles.js';
 import { HUD } from './hud.js';
 import { applyShot } from './shots.js';
 
@@ -43,7 +44,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 // Filmic sunset grade: warm highlights, deeper shadows, punchier colour.
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.toneMappingExposure = 1.25;
 document.getElementById('game-root').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -56,15 +57,30 @@ const audio = new AudioSys();
 const hud = new HUD();
 const player = new Player(scene);
 const traffic = new TrafficSystem(scene, city, mulberry32(SEED + 7));
-const parked = spawnParkedCars(scene, city, mulberry32(SEED + 21), 10);
+const parked = spawnParkedCars(scene, city, mulberry32(SEED + 21), 22);
 const peds = new PedSystem(scene, city, mulberry32(SEED + 33));
+const stash = new StashSystem(scene, {
+  onCollect: (spot, found) => {
+    player.money += 250;
+    player.addRespect(2);
+    audio.chime();
+    hud.toast(`Stash found! +$250 · RESPECT +2  (${found}/8)`);
+    if (found >= 8) hud.banner('ALL 8 STASHES FOUND — SOLMAR IS YOURS');
+  },
+  onSmg: () => {
+    player.giveSmg();
+    audio.chime();
+    hud.toast('SMG unlocked! Press 3 to equip — 32 rounds, full auto.');
+  },
+});
 const missions = new MissionSystem(scene, city, mulberry32(SEED + 55), {
   onToast: (t) => hud.toast(t),
   onReward: (amount, title) => {
     player.money += amount;
+    player.addRespect(10);
     audio.sting();
     hud.banner(`${title} COMPLETE  +$${amount.toLocaleString('en-US')}`);
-    hud.toast(`Banked $${amount.toLocaleString('en-US')}. Next job unlocked.`);
+    hud.toast(`Banked $${amount.toLocaleString('en-US')}. RESPECT +10. Next job unlocked.`);
     writeSave(player.money, missions.completed);
   },
   onComplete: () => { refreshMenuMissions(); },
@@ -79,15 +95,26 @@ const police = new PoliceSystem(scene, city, mulberry32(SEED + 77), {
   onDown: () => endRun('MARA IS DOWN', 'Mara is down. The city chews up drivers who push too hard — but she always gets back up.'),
 });
 police.onHeat = (n, reason) => {
-  if (n > 0) hud.toast(`WANTED LEVEL ${n} — ${reason}`);
-  else hud.toast('You lost the heat… for now.');
+  if (n > 0) {
+    hud.toast(`WANTED LEVEL ${n} — ${reason}`);
+    police._peakWanted = Math.max(police._peakWanted || 0, n);
+  } else {
+    hud.toast('You lost the heat… for now.');
+    // Escaping a 3+ star chase earns street cred.
+    if ((police._peakWanted || 0) >= 3) {
+      player.addRespect(5);
+      hud.toast('Clean getaway — RESPECT +5');
+    }
+    police._peakWanted = 0;
+  }
 };
+police._peakWanted = 0;
 police.onCrash = () => { audio.crash(); shake(0.5); };
 police.onPunch = () => { audio.punch(); shake(0.3); };
 
 const world = {
   scene, city, rng: mulberry32(SEED + 99),
-  player, traffic, peds, police, missions, hud, audio,
+  player, traffic, peds, police, missions, hud, audio, stash,
   cars: [...parked],
   camera: { yaw: Math.PI, pitch: 0.32, dist: 9 },
   shotName: '', shotObjective: null, shotTarget: null,
@@ -133,7 +160,7 @@ function refreshMenuMissions() {
   if (save && (save.money > 0 || save.done.length > 0)) {
     cont.classList.remove('hidden');
     document.getElementById('continue-label').textContent =
-      `$${save.money.toLocaleString('en-US')} · ${save.done.length}/3 jobs`;
+      `$${save.money.toLocaleString('en-US')} · ${save.done.length}/4 jobs`;
   }
 }
 refreshMenuMissions();
@@ -149,7 +176,7 @@ function startPlaying() {
   endEl.classList.add('hidden');
   hud.show();
   audio.ensure();
-  if (!missions.active && missions.completed.size < 3) {
+  if (!missions.active && missions.completed.size < 4) {
     const next = missions.defs.find((d) => !missions.completed.has(d.id));
     hud.toast(`${next.title} — ${next.brief}`, 6000);
   }
@@ -333,6 +360,53 @@ function updateCamera(dt) {
 let lastT = performance.now();
 let shotFrames = 0;
 const clock = { now: 0 };
+// In-game clock: Day 1 starts at sunset, 18:52. 1 real second = 15 game-seconds.
+let gameMinutes = 18 * 60 + 52;
+
+/** The full HUD payload — also reused for the city-map overlay. */
+function hudState() {
+  const obj = world.shotObjective || {
+    title: missions.active ? missions.current.def.title : 'SOLMAR HEAT',
+    text: missions.objectiveText,
+  };
+  return {
+    money: player.money,
+    health: player.health,
+    ammo: player.ammo,
+    reloading: player.reloadTimer > 0,
+    weapon: player.weapon,
+    hasSmg: player.hasSmg,
+    smgMag: player.smgMag,
+    smgReserve: player.smgReserve,
+    respect: player.respect,
+    respectLevel: player.respectLevel,
+    gameMinutes,
+    district: districtAt(player.pos.x, player.pos.z),
+    wanted: police.wanted,
+    speed: player.isDriving ? player.car.speed : 0,
+    driving: player.isDriving,
+    objectiveTitle: obj.title,
+    objectiveText: obj.text,
+    missionTimer: (missions.current && missions.current.timer > 0)
+      ? missions.current.timer : (world.shotTimer || 0),
+    policeCops: police.cops.filter((c) => !c.down).length,
+    heliActive: !!police.heli,
+    playerX: player.pos.x,
+    playerZ: player.pos.z,
+    heading: player.isDriving ? player.car.heading : player.heading,
+    police: police.cars,
+    missionTarget: world.shotTarget || missions.target,
+    traffic: traffic.cars,
+    goldCar: missions.specialCar,
+    bustMeter: police.bustMeter,
+    inMenu,
+    jobsDone: missions.completed.size,
+    stashFound: stash.found,
+    stashes: stash.stashes,
+    smgTaken: stash.smg.taken,
+    missionList: missions.defs.map((d) => ({ title: d.title, reward: d.reward, done: missions.completed.has(d.id) })),
+  };
+}
 
 function frame(now) {
   requestAnimationFrame(frame);
@@ -340,7 +414,23 @@ function frame(now) {
   lastT = now;
   clock.now = now / 1000;
 
+  // City-map toggle works even while paused (the map IS a pause).
+  if (!inMenu && input.consume('Tab')) {
+    if (hud.mapOpen) {
+      hud.hideMap();
+      paused = false;
+    } else {
+      hud.showMap(hudState());
+      paused = true;
+    }
+  }
+  if (!inMenu && input.consume('Escape') && hud.mapOpen) {
+    hud.hideMap();
+    paused = false;
+  }
+
   if (!paused) {
+    gameMinutes += dt * 0.25;
     // Edge-triggered actions.
     if (input.consume('KeyE')) {
       if (player.isDriving) player.exitCar();
@@ -348,6 +438,11 @@ function frame(now) {
     }
     if (input.consume('KeyF')) doPunch();
     if (input.consume('KeyR')) player.reload();
+    if (input.consume('Digit1')) player.selectWeapon(1);
+    if (input.consume('Digit2')) player.selectWeapon(2);
+    if (input.consume('Digit3') && !player.selectWeapon(3)) {
+      hud.toast('SMG locked — find the red crate downtown first.');
+    }
     if (input.consume('KeyM')) {
       audio.setMuted(!audio.muted);
       hud.toast(audio.muted ? 'Sound muted' : 'Sound on');
@@ -356,7 +451,10 @@ function frame(now) {
       paused = true;
       pauseEl.classList.remove('hidden');
     }
-    if (input.takeClick() && !player.isDriving && !inMenu) doShoot();
+    if (input.takeClick() && !player.isDriving && !inMenu) {
+      if (player.weapon === 'fist') doPunch();
+      else doShoot();
+    }
 
     // Player + driving.
     if (player.isDriving) {
@@ -384,6 +482,7 @@ function frame(now) {
     }
     traffic.update(dt, player.pos);
     peds.update(dt, player.pos, player.car);
+    stash.update(dt, player.pos);
     police.update(dt, player, allCars());
     if (SHOT_MODE) {
       // Screenshot mode: keep the staged chase at speed and the HUD clean —
@@ -401,34 +500,7 @@ function frame(now) {
   }
 
   // HUD (also in shot mode, where the menu never opens).
-  const obj = world.shotObjective || {
-    title: missions.active ? missions.current.def.title : 'SOLMAR HEAT',
-    text: missions.objectiveText,
-  };
-  hud.update({
-    money: player.money,
-    health: player.health,
-    ammo: player.ammo,
-    reloading: player.reloadTimer > 0,
-    wanted: police.wanted,
-    speed: player.isDriving ? player.car.speed : 0,
-    driving: player.isDriving,
-    objectiveTitle: obj.title,
-    objectiveText: obj.text,
-    missionTimer: (missions.current && missions.current.timer > 0)
-      ? missions.current.timer : (world.shotTimer || 0),
-    policeCops: police.cops.filter((c) => !c.down).length,
-    heliActive: !!police.heli,
-    playerX: player.pos.x,
-    playerZ: player.pos.z,
-    heading: player.isDriving ? player.car.heading : player.heading,
-    police: police.cars,
-    missionTarget: world.shotTarget || missions.target,
-    traffic: traffic.cars,
-    goldCar: missions.specialCar,
-    bustMeter: police.bustMeter,
-    inMenu,
-  });
+  hud.update(hudState());
 
   // Menu backdrop: slow orbit around the city centre while the menu is up.
   if (inMenu && !SHOT_MODE) {

@@ -14,8 +14,15 @@ export class Player {
     this.speed = 0;
     this.health = 100;
     this.money = 0;
-    this.ammo = 12; // magazine
+    this.ammo = 12; // pistol magazine
     this.reserve = Infinity;
+    // Weapon slots: 1 fists, 2 pistol, 3 SMG (unlocked by pickup).
+    this.weapon = 'pistol';
+    this.hasSmg = false;
+    this.smgMag = 32;
+    this.smgReserve = 0;
+    // RESPECT: 0–100, earned by jobs, escapes and stashes. Level = 1 + floor(/20).
+    this.respect = 0;
     this.car = null; // the car currently driven, or null
     this.punchCooldown = 0;
     this.shootCooldown = 0;
@@ -62,6 +69,25 @@ export class Player {
 
   get pos() { return this.car ? { x: this.car.x, z: this.car.z } : { x: this.x, z: this.z }; }
   get isDriving() { return this.car !== null; }
+  get respectLevel() { return Math.min(5, Math.floor(this.respect / 20) + 1); }
+
+  addRespect(n) { this.respect = Math.max(0, Math.min(100, this.respect + n)); }
+
+  /** Pick up the SMG: unlocks slot 3 with a fresh reserve. */
+  giveSmg() {
+    this.hasSmg = true;
+    this.smgReserve += 96;
+    this.weapon = 'smg';
+  }
+
+  /** Switch weapon (1 fists, 2 pistol, 3 SMG). Returns false if unavailable. */
+  selectWeapon(slot) {
+    if (this.reloadTimer > 0 || this.car) return false;
+    if (slot === 1) { this.weapon = 'fist'; return true; }
+    if (slot === 2) { this.weapon = 'pistol'; return true; }
+    if (slot === 3 && this.hasSmg) { this.weapon = 'smg'; return true; }
+    return false;
+  }
 
   takeDamage(amount) {
     if (this.invulnerable > 0) return;
@@ -111,12 +137,14 @@ export class Player {
   /** Shoot along the camera ray. Returns {kind, target, point} or null. */
   shoot(camera, targets) {
     if (this.shootCooldown > 0 || this.reloadTimer > 0 || this.car) return null;
-    if (this.ammo <= 0) {
+    if (this.weapon === 'fist') return null; // fists punch — see doPunch
+    const isSmg = this.weapon === 'smg';
+    if ((isSmg ? this.smgMag : this.ammo) <= 0) {
       this.reload();
       return { kind: 'dry', target: null, point: null };
     }
-    this.shootCooldown = 0.22;
-    this.ammo--;
+    this.shootCooldown = isSmg ? 0.09 : 0.22;
+    if (isSmg) this.smgMag--; else this.ammo--;
     // Muzzle flash at Mara's right hand.
     const hand = new THREE.Vector3(0.55, 1.35, 0.4).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.heading);
     this.flash.position.set(this.x + hand.x, hand.y, this.z + hand.z);
@@ -144,8 +172,14 @@ export class Player {
   }
 
   reload() {
-    if (this.reloadTimer > 0 || this.ammo === 12) return;
-    this.reloadTimer = 0.9;
+    if (this.reloadTimer > 0 || this.car) return;
+    if (this.weapon === 'smg') {
+      if (this.smgMag === 32 || this.smgReserve <= 0) return;
+      this.reloadTimer = 1.1;
+    } else if (this.weapon === 'pistol') {
+      if (this.ammo === 12) return;
+      this.reloadTimer = 0.9;
+    }
   }
 
   update(dt, input, camYaw, city, cars, onCrime) {
@@ -154,7 +188,15 @@ export class Player {
     this.invulnerable = Math.max(0, this.invulnerable - dt);
     if (this.reloadTimer > 0) {
       this.reloadTimer -= dt;
-      if (this.reloadTimer <= 0) this.ammo = 12;
+      if (this.reloadTimer <= 0) {
+        if (this.weapon === 'smg') {
+          const take = Math.min(32 - this.smgMag, this.smgReserve);
+          this.smgMag += take;
+          this.smgReserve -= take;
+        } else if (this.weapon === 'pistol') {
+          this.ammo = 12;
+        }
+      }
     }
     if (this.car) return; // driving is handled by vehicles.updatePlayerCar
     // Move relative to the camera yaw.

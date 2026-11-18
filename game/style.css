@@ -21,7 +21,31 @@ body { font-family: "Arial Black", Arial, Helvetica, sans-serif; color: #fff; }
   position: absolute; inset: 0; text-align: center; line-height: 17px;
   font-size: 13px; text-shadow: 0 1px 0 #000;
 }
-#ammo { margin-top: 6px; font-size: 16px; text-shadow: 0 2px 0 #000; color: #ffe9a8; }
+#weapons { margin-top: 6px; display: flex; gap: 6px; }
+#weapons .slot {
+  font-size: 14px; letter-spacing: 1px; padding: 5px 9px; border-radius: 4px;
+  background: rgba(0,0,0,.65); border: 2px solid rgba(255,255,255,.35); color: #ddd;
+  text-shadow: 0 1px 0 #000;
+}
+#weapons .slot .slot-key { color: #ffd60a; margin-right: 4px; }
+#weapons .slot .slot-ammo { color: #ffe9a8; margin-left: 6px; font-size: 12px; }
+#weapons .slot.active { border-color: #ffd60a; color: #fff; background: rgba(60,40,0,.75); }
+#weapons .slot.locked { opacity: .45; }
+#weapons.dim { opacity: .55; }
+#respect-bar {
+  margin-top: 6px; width: 240px; height: 18px; background: rgba(0,0,0,.65);
+  border: 2px solid #fff; border-radius: 4px; position: relative; overflow: hidden;
+}
+#respect-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff2e88, #c77dff); transition: width .3s; }
+#respect-text {
+  position: absolute; inset: 0; text-align: center; line-height: 15px;
+  font-size: 12px; letter-spacing: 1px; text-shadow: 0 1px 0 #000;
+}
+#radio { margin-top: 6px; font-size: 14px; letter-spacing: 1px; color: #ff9ecf; text-shadow: 0 2px 0 #000; }
+#game-clock {
+  font-size: 22px; letter-spacing: 2px; color: #fff;
+  text-shadow: 0 2px 0 #000, 0 0 12px rgba(0,0,0,.9); margin-bottom: 2px;
+}
 #mission-timer {
   margin-top: 8px; font-size: 30px; color: #fff; letter-spacing: 1px;
   text-shadow: 0 2px 0 #000, 0 0 14px rgba(0,0,0,.9);
@@ -31,7 +55,14 @@ body { font-family: "Arial Black", Arial, Helvetica, sans-serif; color: #fff; }
   border: 2px solid rgba(255,255,255,.35); border-radius: 6px; padding: 8px 10px;
 }
 #units-title { font-size: 17px; letter-spacing: 2px; color: #ffb3ab; text-shadow: 0 2px 0 #000; }
-#units-list { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 5px; }
+#units-list { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+#units-list .unit-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; letter-spacing: 1px; text-shadow: 0 1px 0 #000;
+}
+#units-list .unit-name { color: #fff; flex: none; min-width: 118px; }
+#units-list .unit-dist { color: #cfe3ff; margin-left: auto; font-size: 13px; }
+#units-list .pill { flex: none; }
 #units-list .pill {
   font-size: 13px; letter-spacing: 1px; padding: 4px 8px; border-radius: 12px;
   color: #fff; text-shadow: 0 1px 0 #000;
@@ -86,10 +117,17 @@ body { font-family: "Arial Black", Arial, Helvetica, sans-serif; color: #fff; }
 #speed { font-size: 64px; line-height: 1; }
 #speed-unit { font-size: 18px; margin-left: 6px; color: #ffd60a; }
 
+#minimap-wrap { position: absolute; left: 20px; bottom: 20px; text-align: center; }
 #minimap {
-  position: absolute; left: 20px; bottom: 20px; width: 240px; height: 240px;
+  width: 240px; height: 240px; display: block;
   border: 3px solid rgba(255,255,255,.9); border-radius: 50%;
   background: rgba(10,20,30,.85); box-shadow: 0 0 0 4px rgba(0,0,0,.55);
+}
+#district-label {
+  margin-top: 6px; display: inline-block; padding: 3px 12px;
+  font-size: 15px; letter-spacing: 3px; color: #ffd60a;
+  background: rgba(0,0,0,.65); border: 2px solid rgba(255,255,255,.5); border-radius: 4px;
+  text-shadow: 0 1px 0 #000;
 }
 #toast {
   position: absolute; left: 50%; top: 96px; transform: translateX(-50%);
@@ -148,3 +186,24 @@ button {
 }
 .menu-controls b { color: #ffd60a; }
 .menu-foot { margin-top: 20px; font-family: Arial, sans-serif; font-size: 12px; color: rgba(255,255,255,.6); }
+
+/* ---------- City map overlay (TAB) ---------- */
+#map-overlay { background: rgba(4,10,18,.92); z-index: 30; }
+.map-inner { width: 920px; max-width: 94vw; max-height: 94vh; text-align: left; }
+.map-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+.map-head h2 { font-size: 34px; letter-spacing: 3px; color: #ffd60a; text-shadow: 0 3px 0 #000; }
+.map-close-hint { font-family: Arial, sans-serif; font-size: 14px; color: rgba(255,255,255,.7); }
+.map-body { display: flex; gap: 18px; }
+#bigmap {
+  width: 560px; height: 560px; max-width: 58vw; max-height: 78vh;
+  border: 3px solid rgba(255,255,255,.85); border-radius: 8px; background: rgba(10,20,30,.9);
+}
+.map-side { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 16px; }
+.map-section h3 { font-size: 17px; letter-spacing: 3px; color: #ff5da2; margin-bottom: 6px; }
+.map-section div { font-family: Arial, sans-serif; font-size: 15px; line-height: 1.8; color: #eef3f8; }
+.map-section .done { color: #7dff9a; }
+#map-stats b { color: #ffd60a; }
+.legend-gold { color: #ffd60a; }
+.legend-red { color: #ff6b6b; }
+.legend-pink { color: #ff5da2; }
+.legend-red2 { color: #ff2a22; }

@@ -16,7 +16,7 @@ export class Input {
       this.keys.add(e.code);
       this.pressed.add(e.code);
       if (this.onFirstGesture) { this.onFirstGesture(); this.onFirstGesture = null; }
-      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+      if (['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
     window.addEventListener('mousedown', (e) => {
